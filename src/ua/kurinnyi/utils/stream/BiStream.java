@@ -1,5 +1,7 @@
 package ua.kurinnyi.utils.stream;
 
+import ua.kurinnyi.utils.tuple.Pair;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +22,7 @@ public class BiStream<T,R>{
 	public static <T,R> BiStream<T,R> flatMap(Stream<? extends T> stream,
 	                                          Function<? super T, ? extends Stream<? extends R>> mapper) {
 		return new BiStream<>(stream.flatMap(initialValue ->
-				mapper.apply(initialValue).map(mappedValue -> new Pair<>(initialValue, mappedValue))
+				mapper.apply(initialValue).map(mappedValue -> Pair.of(initialValue, mappedValue))
 		));
 	}
 
@@ -28,16 +30,16 @@ public class BiStream<T,R>{
 		if (list1.size() != list2.size())
 			throw new IllegalArgumentException("Lists should have same size.");
 		Iterator<? extends R> list2Iterator = list2.iterator();
-		return new BiStream<>(list1.stream().map(value1 -> new Pair<>(value1, list2Iterator.next())));
+		return new BiStream<>(list1.stream().map(value1 -> Pair.of(value1, list2Iterator.next())));
 	}
 
 	public static <T,R> BiStream<T,R> map(Stream<? extends T> stream,
 	                                          Function<? super T, ? extends R> mapper) {
-		return new BiStream<>(stream.map(initialValue -> new Pair<>(initialValue, mapper.apply(initialValue))));
+		return new BiStream<>(stream.map(initialValue -> Pair.of(initialValue, mapper.apply(initialValue))));
 	}
 
 	public static <T, R>BiStream<T, R> fromMap(Map<? extends T, ? extends R> map) {
-		return new BiStream<>(map.entrySet().stream().map(entry -> new Pair(entry.getKey(), entry.getValue())));
+		return new BiStream<>(map.entrySet().stream().map(entry -> Pair.of(entry.getKey(), entry.getValue())));
 	}
 
 	public static <T, R> BiStream<T, R> fromStream(Stream<Pair<T, R>> stream) {
@@ -54,11 +56,11 @@ public class BiStream<T,R>{
 	}
 
 	public void forEach(BiConsumer<? super T, ? super R> action){
-		stream.forEach(pair -> action.accept(pair.first, pair.second));
+		stream.forEach(pair -> action.accept(pair.getLeft(), pair.getRight()));
 	}
 
 	public BiStream<T, R> peek(BiConsumer<? super T, ? super R> action){
-		return new BiStream<>(stream.peek(pair -> action.accept(pair.first, pair.second)));
+		return new BiStream<>(stream.peek(pair -> action.accept(pair.getLeft(), pair.getRight())));
 	}
 
 	public Stream<Pair<T,R>> toStream(){
@@ -74,18 +76,18 @@ public class BiStream<T,R>{
 	}
 
 	public <M> BiStream<M, R> mapLeft(BiFunction<? super T, ? super R , ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> new Pair(mapper.apply(pair.first, pair.second), pair.second)));
+		return new BiStream<>(stream.map(pair -> Pair.of(mapper.apply(pair.getLeft(), pair.getRight()), pair.getRight())));
 	}
 
 	public <M> BiStream<T, M> mapRight(BiFunction<? super T, ? super R, ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> new Pair(pair.first, mapper.apply(pair.first, pair.second))));
+		return new BiStream<>(stream.map(pair -> Pair.of(pair.getLeft(), mapper.apply(pair.getLeft(), pair.getRight()))));
 	}
 
 	public <M> BiStream<T, M> flatMapRight(BiFunction<? super T, ? super R, ? extends Stream<? extends M>> mapper) {
 
 		Stream<Pair<T, M>> resultStream = stream
-				.flatMap(pair ->  mapper.apply(pair.first, pair.second)
-				.map(mappedRight -> new Pair<>(pair.first, mappedRight)));
+				.flatMap(pair ->  mapper.apply(pair.getLeft(), pair.getRight())
+				.map(mappedRight -> Pair.of(pair.getLeft(), mappedRight)));
 
 		return new BiStream<>(resultStream);
 	}
@@ -93,18 +95,18 @@ public class BiStream<T,R>{
 	public <M> BiStream<M, R> flatMapLeft(BiFunction<? super T, ? super R, ? extends Stream<? extends M>> mapper) {
 
 		Stream<Pair<M, R>> resultStream = stream
-				.flatMap(pair ->  mapper.apply(pair.first, pair.second)
-				.map(mappedLeft-> new Pair<>(mappedLeft, pair.second)));
+				.flatMap(pair ->  mapper.apply(pair.getLeft(), pair.getRight())
+				.map(mappedLeft->Pair.of(mappedLeft, pair.getRight())));
 
 		return new BiStream<>(resultStream);
 	}
 
 	private Predicate<Pair<T, R>> convertToPairPredicate(BiPredicate<? super T, ? super R> predicate) {
-		return pair -> predicate.test(pair.first, pair.second);
+		return pair -> predicate.test(pair.getLeft(), pair.getRight());
 	}
 
 	public BiStream<R, T> swap() {
-		return new BiStream<>(stream.map(pair -> new Pair(pair.second, pair.first)));
+		return new BiStream<>(stream.map(pair -> Pair.of(pair.getRight(), pair.getLeft())));
 	}
 
 	public Map<T, R> toMap() {
@@ -112,33 +114,6 @@ public class BiStream<T,R>{
 	}
 
 	public Map<T, R> toMap(BinaryOperator<R> mergeFunction) {
-		return stream.collect(Collectors.toMap(pair -> pair.first, pair -> pair.second, mergeFunction));
+		return stream.collect(Collectors.toMap(pair -> pair.getLeft(), pair -> pair.getRight(), mergeFunction));
 	}
-
-
-
-	//TODO advance tuple
-
-	public static class Pair <T, R> {
-		private T first;
-		private R second;
-
-		public static <T, R> Pair<T, R> of(T leftValue, R rightValue) {
-			return new Pair<>(leftValue, rightValue);
-		}
-
-		Pair(T first, R second) {
-			this.first = first;
-			this.second = second;
-		}
-
-		public T getFirst() {
-			return first;
-		}
-
-		public R getSecond() {
-			return second;
-		}
-	}
-
 }

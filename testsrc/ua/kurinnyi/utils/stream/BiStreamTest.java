@@ -2,6 +2,7 @@ package ua.kurinnyi.utils.stream;
 
 import org.junit.Before;
 import org.junit.Test;
+import ua.kurinnyi.utils.tuple.Pair;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -28,10 +29,10 @@ public class BiStreamTest {
 
 		assertThat(biStream.toStream().collect(toList()))
 				.isEqualToComparingFieldByFieldRecursively(
-						asList(new BiStream.Pair<>("a", 1),
-								new BiStream.Pair<>("a", 2),
-								new BiStream.Pair<>("b", 1),
-								new BiStream.Pair<>("b", 2)));
+						asList(Pair.of("a", 1),
+								Pair.of("a", 2),
+								Pair.of("b", 1),
+								Pair.of("b", 2)));
 	}
 
 	@Test
@@ -40,7 +41,7 @@ public class BiStreamTest {
 		BiStream biStream = initialBiStream.filter((s, i) -> "a".equals(s) && 1 == i);
 
 		assertThat(biStream.toStream().collect(toList()))
-				.isEqualToComparingFieldByFieldRecursively(singletonList(new BiStream.Pair<>("a", 1)));
+				.isEqualToComparingFieldByFieldRecursively(singletonList(Pair.of("a", 1)));
 	}
 
 	@Test
@@ -190,7 +191,7 @@ public class BiStreamTest {
 
 	@Test
 	public void shouldReturnEmptyBiStreamForEmptyMap(){
-		Map<String, String> map = new HashMap();
+		Map<String, String> map = new HashMap<>();
 
 		BiStream<String, String> biStream = BiStream.fromMap(map);
 
@@ -201,7 +202,7 @@ public class BiStreamTest {
 	public void shouldUseFunctionToProduceRightValuesFromInitialStream(){
 		Stream<String> stream = Stream.of("a", "b");
 
-		BiStream<String, String> biStream = BiStream.map(stream, s -> s.toUpperCase());
+		BiStream<String, String> biStream = BiStream.map(stream, String::toUpperCase);
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "A"), entry("b", "B"));
 	}
@@ -210,14 +211,14 @@ public class BiStreamTest {
 	public void shouldReturnEmptyBiStreamForEmptyStream(){
 		Stream<String> stream = Stream.empty();
 
-		BiStream<String, String> biStream = BiStream.map(stream, s -> s.toUpperCase());
+		BiStream<String, String> biStream = BiStream.map(stream, String::toUpperCase);
 
 		assertThat(toListOfEntries(biStream)).isEmpty();
 	}
 
 	@Test
 	public void shouldUseStreamOfPairsToProduceBiStream(){
-		Stream<BiStream.Pair<String, String>> stream = Stream.of(BiStream.Pair.of("a", "b"), BiStream.Pair.of("c", "d"));
+		Stream<Pair<String, String>> stream = Stream.of(Pair.of("a", "b"), Pair.of("c", "d"));
 
 		BiStream<String, String> biStream = BiStream.fromStream(stream);
 
@@ -226,7 +227,7 @@ public class BiStreamTest {
 
 	@Test
 	public void shouldCreateBiStreamWithProvidedValues(){
-		BiStream<String, String> biStream = BiStream.of(BiStream.Pair.of("a", "b"), BiStream.Pair.of("c", "d"));
+		BiStream<String, String> biStream = BiStream.of(Pair.of("a", "b"), Pair.of("c", "d"));
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("c", "d"));
 	}
@@ -235,7 +236,7 @@ public class BiStreamTest {
 	@Test
 	public void shouldMakeProductionOfEachEntryInProvidedStreamWithLeftValue(){
 
-		BiStream<String, String> biStream =  BiStream.of(BiStream.Pair.of("a", "bc"), BiStream.Pair.of("d", "ef"))
+		BiStream<String, String> biStream =  BiStream.of(Pair.of("a", "bc"), Pair.of("d", "ef"))
 				.flatMapRight((left, right) -> Stream.of(right.split("")));
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("a", "c"), entry("d", "e"), entry("d", "f"));
@@ -244,17 +245,15 @@ public class BiStreamTest {
 	@Test
 	public void shouldMakeProductionOfEachEntryInProvidedStreamWithRightValue(){
 
-		BiStream<String, String> biStream =  BiStream.of(BiStream.Pair.of("bc", "a"), BiStream.Pair.of("ef", "d"))
+		BiStream<String, String> biStream =  BiStream.of(Pair.of("bc", "a"), Pair.of("ef", "d"))
 				.flatMapLeft((left, right) -> Stream.of(left.split("")));
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("b", "a"), entry("c", "a"), entry("e", "d"), entry("f", "d"));
 	}
 
 
-
-
 	private <T, R> List<Map.Entry<T, R>> toListOfEntries(BiStream<T, R> biStream){
-		return biStream.toStream().map(pair -> entry(pair.getFirst(), pair.getSecond())).collect(toList());
+		return biStream.toStream().map(pair -> entry(pair.getLeft(), pair.getRight())).collect(toList());
 	}
 
 
