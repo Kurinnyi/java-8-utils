@@ -44,6 +44,11 @@ public class BiStream<T,R>{
 		return new BiStream<>(stream);
 	}
 
+	public static <T, R> BiStream<T,R> of(Pair<T, R>... pairs ) {
+		return new BiStream<>(Stream.of(pairs));
+	}
+
+
 	public BiStream<T,R> filter(BiPredicate<? super T, ? super R> predicate){
 		return new BiStream<>(stream.filter(convertToPairPredicate(predicate)));
 	}
@@ -68,12 +73,30 @@ public class BiStream<T,R>{
 		return stream.anyMatch(convertToPairPredicate(predicate));
 	}
 
-	public <M> BiStream<M, R> mapLeft(Function<? super T, ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> new Pair(mapper.apply(pair.first), pair.second)));
+	public <M> BiStream<M, R> mapLeft(BiFunction<? super T, ? super R , ? extends M> mapper) {
+		return new BiStream<>(stream.map(pair -> new Pair(mapper.apply(pair.first, pair.second), pair.second)));
 	}
 
-	public <M> BiStream<T, M> mapRight(Function<? super R, ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> new Pair(pair.first, mapper.apply(pair.second))));
+	public <M> BiStream<T, M> mapRight(BiFunction<? super T, ? super R, ? extends M> mapper) {
+		return new BiStream<>(stream.map(pair -> new Pair(pair.first, mapper.apply(pair.first, pair.second))));
+	}
+
+	public <M> BiStream<T, M> flatMapRight(BiFunction<? super T, ? super R, ? extends Stream<? extends M>> mapper) {
+
+		Stream<Pair<T, M>> resultStream = stream
+				.flatMap(pair ->  mapper.apply(pair.first, pair.second)
+				.map(mappedRight -> new Pair<>(pair.first, mappedRight)));
+
+		return new BiStream<>(resultStream);
+	}
+
+	public <M> BiStream<M, R> flatMapLeft(BiFunction<? super T, ? super R, ? extends Stream<? extends M>> mapper) {
+
+		Stream<Pair<M, R>> resultStream = stream
+				.flatMap(pair ->  mapper.apply(pair.first, pair.second)
+				.map(mappedLeft-> new Pair<>(mappedLeft, pair.second)));
+
+		return new BiStream<>(resultStream);
 	}
 
 	private Predicate<Pair<T, R>> convertToPairPredicate(BiPredicate<? super T, ? super R> predicate) {
@@ -91,6 +114,7 @@ public class BiStream<T,R>{
 	public Map<T, R> toMap(BinaryOperator<R> mergeFunction) {
 		return stream.collect(Collectors.toMap(pair -> pair.first, pair -> pair.second, mergeFunction));
 	}
+
 
 
 	//TODO advance tuple
@@ -117,9 +141,4 @@ public class BiStream<T,R>{
 		}
 	}
 
-	@FunctionalInterface
-	public interface TriFunction <M, T, R>{
-
-		 T apply(M m, T t, R r);
-	}
 }

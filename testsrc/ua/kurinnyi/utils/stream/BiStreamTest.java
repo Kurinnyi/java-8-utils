@@ -106,14 +106,14 @@ public class BiStreamTest {
 
 	@Test
 	public void shouldChangeLeftPartInAccordanceToFunction(){
-		BiStream<String, Integer> biStream = initialBiStream.mapLeft(s -> s.toUpperCase());
+		BiStream<String, Integer> biStream = initialBiStream.mapLeft((left, right) -> left.toUpperCase());
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("A", 1), entry("A", 2), entry("B", 1), entry("B", 2));
 	}
 
 	@Test
 	public void shouldChangeRightPartInAccordanceToFunction(){
-		BiStream<String, Integer> biStream = initialBiStream.mapRight(i -> -i);
+		BiStream<String, Integer> biStream = initialBiStream.mapRight((left, right) -> -right);
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", -1), entry("a", -2), entry("b", -1), entry("b", -2));
 	}
@@ -223,6 +223,33 @@ public class BiStreamTest {
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("c", "d"));
 	}
+
+	@Test
+	public void shouldCreateBiStreamWithProvidedValues(){
+		BiStream<String, String> biStream = BiStream.of(BiStream.Pair.of("a", "b"), BiStream.Pair.of("c", "d"));
+
+		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("c", "d"));
+	}
+
+
+	@Test
+	public void shouldMakeProductionOfEachEntryInProvidedStreamWithLeftValue(){
+
+		BiStream<String, String> biStream =  BiStream.of(BiStream.Pair.of("a", "bc"), BiStream.Pair.of("d", "ef"))
+				.flatMapRight((left, right) -> Stream.of(right.split("")));
+
+		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("a", "c"), entry("d", "e"), entry("d", "f"));
+	}
+
+	@Test
+	public void shouldMakeProductionOfEachEntryInProvidedStreamWithRightValue(){
+
+		BiStream<String, String> biStream =  BiStream.of(BiStream.Pair.of("bc", "a"), BiStream.Pair.of("ef", "d"))
+				.flatMapLeft((left, right) -> Stream.of(left.split("")));
+
+		assertThat(toListOfEntries(biStream)).containsExactly(entry("b", "a"), entry("c", "a"), entry("e", "d"), entry("f", "d"));
+	}
+
 
 
 
