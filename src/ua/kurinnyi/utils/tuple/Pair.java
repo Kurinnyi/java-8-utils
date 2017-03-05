@@ -1,24 +1,28 @@
 package ua.kurinnyi.utils.tuple;
 
 
-public class Pair <T, R> {
-	private T first;
-	private R second;
+public class Pair <L, R> {
+	private L left;
+	private R right;
 
-	public static <T, R> Pair<T, R> of(T leftValue, R rightValue) {
+	public static <L, R> Pair<L, R> of(L leftValue, R rightValue) {
 		return new Pair<>(leftValue, rightValue);
 	}
 
-	private Pair(T first, R second) {
-		this.first = first;
-		this.second = second;
+	private Pair(L left, R right) {
+		this.left = left;
+		this.right = right;
 	}
 
-	public T getLeft() {
-		return first;
+	public L getLeft() {
+		return left;
 	}
 
 	public R getRight() {
-		return second;
+		return right;
+	}
+
+	public Pair<R, L> swap() {
+		return Pair.of(right, left);
 	}
 }
