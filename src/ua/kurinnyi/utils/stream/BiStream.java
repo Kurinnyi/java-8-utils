@@ -52,11 +52,11 @@ public class BiStream<L,R>{
 
 
 	public BiStream<L,R> filter(BiPredicate<? super L, ? super R> predicate){
-		return new BiStream<>(stream.filter(convertToPairPredicate(predicate)));
+		return new BiStream<>(stream.filter(pair -> pair.test(predicate)));
 	}
 
 	public void forEach(BiConsumer<? super L, ? super R> action){
-		stream.forEach(pair -> action.accept(pair.getLeft(), pair.getRight()));
+		stream.forEach(pair -> pair.use(action));
 	}
 
 	public BiStream<L, R> peek(BiConsumer<? super L, ? super R> action){
@@ -68,11 +68,11 @@ public class BiStream<L,R>{
 	}
 
 	public boolean allMatch(BiPredicate<? super L, ? super R> predicate) {
-		return stream.allMatch(convertToPairPredicate(predicate));
+		return stream.allMatch(pair -> pair.test(predicate));
 	}
 
 	public boolean anyMatch(BiPredicate<? super L, ? super R> predicate) {
-		return stream.anyMatch(convertToPairPredicate(predicate));
+		return stream.anyMatch(pair -> pair.test(predicate));
 	}
 
 	public <M> BiStream<M, R> mapLeft(BiFunction<? super L, ? super R , ? extends M> mapper) {
@@ -95,14 +95,10 @@ public class BiStream<L,R>{
 	public <M> BiStream<M, R> flatMapLeft(BiFunction<? super L, ? super R, ? extends Stream<? extends M>> mapper) {
 
 		Stream<Pair<M, R>> resultStream = stream
-				.flatMap(pair ->  mapper.apply(pair.getLeft(), pair.getRight())
-				.map(mappedLeft->Pair.of(mappedLeft, pair.getRight())));
+				.flatMap(pair -> mapper.apply(pair.getLeft(), pair.getRight())
+				.map(mappedLeft-> Pair.of(mappedLeft, pair.getRight())));
 
 		return new BiStream<>(resultStream);
-	}
-
-	private Predicate<Pair<L, R>> convertToPairPredicate(BiPredicate<? super L, ? super R> predicate) {
-		return pair -> predicate.test(pair.getLeft(), pair.getRight());
 	}
 
 	public BiStream<R, L> swap() {
