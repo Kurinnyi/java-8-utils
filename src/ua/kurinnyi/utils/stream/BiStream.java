@@ -33,8 +33,7 @@ public class BiStream<L,R>{
 		return new BiStream<>(list1.stream().map(value1 -> Pair.of(value1, list2Iterator.next())));
 	}
 
-	public static <L,R> BiStream<L,R> map(Stream<? extends L> stream,
-	                                      Function<? super L, ? extends R> mapper) {
+	public static <L,R> BiStream<L,R> map(Stream<? extends L> stream, Function<? super L, ? extends R> mapper) {
 		return new BiStream<>(stream.map(initialValue -> Pair.of(initialValue, mapper.apply(initialValue))));
 	}
 
@@ -76,11 +75,11 @@ public class BiStream<L,R>{
 	}
 
 	public <M> BiStream<M, R> mapLeft(BiFunction<? super L, ? super R , ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> Pair.of(mapper.apply(pair.getLeft(), pair.getRight()), pair.getRight())));
+		return new BiStream<>(stream.map(pair -> pair.mapLeft(mapper)));
 	}
 
 	public <M> BiStream<L, M> mapRight(BiFunction<? super L, ? super R, ? extends M> mapper) {
-		return new BiStream<>(stream.map(pair -> Pair.of(pair.getLeft(), mapper.apply(pair.getLeft(), pair.getRight()))));
+		return new BiStream<>(stream.map(pair -> pair.mapRight(mapper)));
 	}
 
 	public <M> BiStream<L, M> flatMapRight(BiFunction<? super L, ? super R, ? extends Stream<? extends M>> mapper) {
@@ -106,10 +105,10 @@ public class BiStream<L,R>{
 	}
 
 	public Map<L, R> toMap() {
-		return toMap ((r, r2) ->  r2);
+		return toMap ((value, newValue) ->  newValue);
 	}
 
 	public Map<L, R> toMap(BinaryOperator<R> mergeFunction) {
-		return stream.collect(Collectors.toMap(pair -> pair.getLeft(), pair -> pair.getRight(), mergeFunction));
+		return stream.collect(Collectors.toMap(Pair::getLeft, Pair::getRight, mergeFunction));
 	}
 }

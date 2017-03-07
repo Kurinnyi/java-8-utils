@@ -51,4 +51,12 @@ public class Pair <L, R> {
 			BiFunction<? super L, ? super R, ? extends Pair<L1, R1>> mapper){
 		return mapper.apply(left, right);
 	}
+
+	public <L1> Pair<L1,R> mapLeft(BiFunction<? super L, ? super R, ? extends L1> mapper) {
+		return Pair.of(mapper.apply(left,right), right);
+	}
+
+	public <R1> Pair<L,R1> mapRight(BiFunction<? super L, ? super R, ? extends R1> mapper) {
+		return Pair.of(left, mapper.apply(left,right));
+	}
 }

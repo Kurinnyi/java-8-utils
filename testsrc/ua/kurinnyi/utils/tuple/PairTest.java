@@ -84,6 +84,24 @@ public class PairTest {
 		checkPair(result, 1, "A");
 	}
 
+	@Test
+	public void shouldChangeLeftValueInAccordanceToFunction() {
+		Pair<String, Integer> pair = Pair.of("A", 1);
+
+		Pair<Integer, Integer> result = pair.mapLeft((left, right) -> right);
+
+		checkPair(result, 1, 1);
+	}
+
+	@Test
+	public void shouldChangeRightValueInAccordanceToFunction() {
+		Pair<String, Integer> pair = Pair.of("A", 1);
+
+		Pair<String, String> result = pair.mapRight((left, right) -> left);
+
+		checkPair(result, "A", "A");
+	}
+
 
 	private <L,R> void checkPair(Pair<L,R> pair, L leftValue, R rightValue){
 		assertThat(pair.getLeft()).isEqualTo(leftValue);
