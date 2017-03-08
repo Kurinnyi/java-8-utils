@@ -5,6 +5,7 @@ import ua.kurinnyi.utils.tuple.Pair;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -62,10 +63,6 @@ public class BiStream<L,R>{
 		return new BiStream<>(stream.peek(pair -> action.accept(pair.getLeft(), pair.getRight())));
 	}
 
-	public Stream<Pair<L,R>> toStream(){
-		return stream;
-	}
-
 	public boolean allMatch(BiPredicate<? super L, ? super R> predicate) {
 		return stream.allMatch(pair -> pair.test(predicate));
 	}
@@ -85,8 +82,7 @@ public class BiStream<L,R>{
 	public <M> BiStream<L, M> flatMapRight(BiFunction<? super L, ? super R, ? extends Stream<? extends M>> mapper) {
 
 		Stream<Pair<L, M>> resultStream = stream
-				.flatMap(pair ->  mapper.apply(pair.getLeft(), pair.getRight())
-				.map(mappedRight -> Pair.of(pair.getLeft(), mappedRight)));
+				.flatMap(pair ->  pair.transform(mapper).map(mappedRight -> Pair.of(pair.getLeft(), mappedRight)));
 
 		return new BiStream<>(resultStream);
 	}
@@ -94,15 +90,26 @@ public class BiStream<L,R>{
 	public <M> BiStream<M, R> flatMapLeft(BiFunction<? super L, ? super R, ? extends Stream<? extends M>> mapper) {
 
 		Stream<Pair<M, R>> resultStream = stream
-				.flatMap(pair -> mapper.apply(pair.getLeft(), pair.getRight())
-				.map(mappedLeft-> Pair.of(mappedLeft, pair.getRight())));
+				.flatMap(pair -> pair.transform(mapper).map(mappedLeft-> Pair.of(mappedLeft, pair.getRight())));
 
 		return new BiStream<>(resultStream);
 	}
 
+
+	public <L1,R1> BiStream<L1,R1> flatMap(BiFunction<? super L, ? super R, ? extends BiStream<L1,R1>> mapper) {
+		return new BiStream<>(this.stream.flatMap(pair -> pair.transform(mapper).toStream()));
+	}
+
+
 	public BiStream<R, L> swap() {
 		return new BiStream<>(stream.map(Pair::swap));
 	}
+
+
+	public Stream<Pair<L,R>> toStream(){
+		return stream;
+	}
+
 
 	public Map<L, R> toMap() {
 		return toMap ((value, newValue) ->  newValue);
@@ -110,5 +117,9 @@ public class BiStream<L,R>{
 
 	public Map<L, R> toMap(BinaryOperator<R> mergeFunction) {
 		return stream.collect(Collectors.toMap(Pair::getLeft, Pair::getRight, mergeFunction));
+	}
+
+	public Optional<Pair<L, R>> findFirst() {
+		return stream.findFirst();
 	}
 }

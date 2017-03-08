@@ -12,6 +12,7 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static ua.kurinnyi.utils.tuple.Pair.of;
 
 public class BiStreamTest {
 
@@ -29,10 +30,10 @@ public class BiStreamTest {
 
 		assertThat(biStream.toStream().collect(toList()))
 				.isEqualToComparingFieldByFieldRecursively(
-						asList(Pair.of("a", 1),
-								Pair.of("a", 2),
-								Pair.of("b", 1),
-								Pair.of("b", 2)));
+						asList(of("a", 1),
+								of("a", 2),
+								of("b", 1),
+								of("b", 2)));
 	}
 
 	@Test
@@ -41,7 +42,7 @@ public class BiStreamTest {
 		BiStream biStream = initialBiStream.filter((s, i) -> "a".equals(s) && 1 == i);
 
 		assertThat(biStream.toStream().collect(toList()))
-				.isEqualToComparingFieldByFieldRecursively(singletonList(Pair.of("a", 1)));
+				.isEqualToComparingFieldByFieldRecursively(singletonList(of("a", 1)));
 	}
 
 	@Test
@@ -218,7 +219,7 @@ public class BiStreamTest {
 
 	@Test
 	public void shouldUseStreamOfPairsToProduceBiStream(){
-		Stream<Pair<String, String>> stream = Stream.of(Pair.of("a", "b"), Pair.of("c", "d"));
+		Stream<Pair<String, String>> stream = Stream.of(of("a", "b"), of("c", "d"));
 
 		BiStream<String, String> biStream = BiStream.fromStream(stream);
 
@@ -227,7 +228,7 @@ public class BiStreamTest {
 
 	@Test
 	public void shouldCreateBiStreamWithProvidedValues(){
-		BiStream<String, String> biStream = BiStream.of(Pair.of("a", "b"), Pair.of("c", "d"));
+		BiStream<String, String> biStream = BiStream.of(of("a", "b"), of("c", "d"));
 
 		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("c", "d"));
 	}
@@ -236,21 +237,47 @@ public class BiStreamTest {
 	@Test
 	public void shouldMakeProductionOfEachEntryInProvidedStreamWithLeftValue(){
 
-		BiStream<String, String> biStream =  BiStream.of(Pair.of("a", "bc"), Pair.of("d", "ef"))
+		BiStream<String, String> biStream =  BiStream.of(of("a", "bc"), of("d", "ef"))
 				.flatMapRight((left, right) -> Stream.of(right.split("")));
 
-		assertThat(toListOfEntries(biStream)).containsExactly(entry("a", "b"), entry("a", "c"), entry("d", "e"), entry("d", "f"));
+		assertThat(toListOfEntries(biStream))
+				.containsExactly(entry("a", "b"), entry("a", "c"), entry("d", "e"), entry("d", "f"));
 	}
 
 	@Test
 	public void shouldMakeProductionOfEachEntryInProvidedStreamWithRightValue(){
 
-		BiStream<String, String> biStream =  BiStream.of(Pair.of("bc", "a"), Pair.of("ef", "d"))
+		BiStream<String, String> biStream =  BiStream.of(of("bc", "a"), of("ef", "d"))
 				.flatMapLeft((left, right) -> Stream.of(left.split("")));
 
-		assertThat(toListOfEntries(biStream)).containsExactly(entry("b", "a"), entry("c", "a"), entry("e", "d"), entry("f", "d"));
+		assertThat(toListOfEntries(biStream))
+				.containsExactly(entry("b", "a"), entry("c", "a"), entry("e", "d"), entry("f", "d"));
 	}
 
+	@Test
+	public void shouldReturnCombinationOfCreatedBiStreams(){
+
+		BiStream<String, String> biStream =  BiStream.of(of("a", "b"), of("c", "d"))
+				.flatMap((left, right) -> BiStream.of(of(left + right, right + left), of(right + left, left + right)));
+
+		assertThat(toListOfEntries(biStream))
+				.containsExactly(entry("ab", "ba"), entry("ba", "ab"), entry("cd", "dc"), entry("dc", "cd"));
+	}
+
+	@Test
+	public void shouldReturnEmptyOptionalOnEmptyStream(){
+		Optional<Pair<String, String>> pair =  BiStream.of(of("a", "b")).filter((left, right) -> left == right).findFirst();
+
+		assertThat(pair).isEmpty();
+	}
+
+	@Test
+	public void shouldReturnFirstValue(){
+		Optional<Pair<String, String>> pair =  BiStream.of(of("a", "b"), of("c", "d")).findFirst();
+
+		assertThat(pair).isNotEmpty();
+		assertThat(pair).contains(of("a", "b"));
+	}
 
 	private <T, R> List<Map.Entry<T, R>> toListOfEntries(BiStream<T, R> biStream){
 		return biStream.toStream().map(pair -> entry(pair.getLeft(), pair.getRight())).collect(toList());
