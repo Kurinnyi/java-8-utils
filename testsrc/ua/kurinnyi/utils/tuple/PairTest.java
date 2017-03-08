@@ -62,7 +62,7 @@ public class PairTest {
 
 		Optional<Pair<String, Integer>> result = pair.filter((left, right) -> left != "A");
 
-		assertThat(result.isPresent()).isFalse();
+		assertThat(result).isEmpty();
 	}
 
 	@Test
@@ -71,8 +71,8 @@ public class PairTest {
 
 		Optional<Pair<String, Integer>> result = pair.filter((left, right) -> left == "A");
 
-		assertThat(result.isPresent()).isTrue();
-		assertThat(result.get()).isEqualTo(pair);
+		assertThat(result).isNotEmpty();
+		assertThat(result).contains(pair);
 	}
 
 	@Test

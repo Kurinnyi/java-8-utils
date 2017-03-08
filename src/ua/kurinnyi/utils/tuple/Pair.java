@@ -1,6 +1,7 @@
 package ua.kurinnyi.utils.tuple;
 
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -58,5 +59,24 @@ public class Pair <L, R> {
 
 	public <R1> Pair<L,R1> mapRight(BiFunction<? super L, ? super R, ? extends R1> mapper) {
 		return Pair.of(left, mapper.apply(left,right));
+	}
+
+
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) return true;
+		if (!(other instanceof Pair)) return false;
+
+		Pair<?, ?> otherPair = (Pair<?, ?>) other;
+
+		return Objects.equals(left, otherPair.left) && Objects.equals(right, otherPair.right);
+
+	}
+
+	@Override
+	public int hashCode() {
+		int result = left != null ? left.hashCode() : 0;
+		result = 31 * result + (right != null ? right.hashCode() : 0);
+		return result;
 	}
 }
